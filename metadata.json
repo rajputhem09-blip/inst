@@ -1,0 +1,6 @@
+{
+  "name": "Lyko",
+  "description": "Premium modern social media mobile platform with feeds, stories, reels, messaging, voice notes, live streaming, and admin panel.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
