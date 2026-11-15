@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "217856521071",
+    "project_id": "lyko-3c486",
+    "storage_bucket": "lyko-3c486.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:217856521071:android:9d15402e53e4e5809dae9a",
+        "android_client_info": {
+          "package_name": "com.aistudio.lyko.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB6IsnBJ79gDk9WotNsGiexDL1-6jW3hTI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
