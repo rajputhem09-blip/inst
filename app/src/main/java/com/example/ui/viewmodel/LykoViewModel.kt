@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.model.*
 import com.example.data.repository.LykoRepository
+import com.google.firebase.auth.UserProfileChangeRequest
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -15,6 +16,7 @@ enum class FeedTab {
 }
 
 enum class NavigationDestination {
+    AUTH,
     FEED,
     EXPLORE,
     CREATE,
@@ -48,8 +50,19 @@ class LykoViewModel(private val repository: LykoRepository = LykoRepository()) :
     val blockedUserIds = repository.blockedUserIds
 
     // Navigation & UI State
-    private val _currentScreen = MutableStateFlow(NavigationDestination.FEED)
+    private val _currentScreen = MutableStateFlow(
+        if (isLoggedIn.value) NavigationDestination.FEED else NavigationDestination.AUTH
+    )
     val currentScreen = _currentScreen.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            isLoggedIn.collect { loggedIn ->
+                _currentScreen.value = if (loggedIn) NavigationDestination.FEED
+                    else NavigationDestination.AUTH
+            }
+        }
+    }
 
     private val _selectedFeedTab = MutableStateFlow(FeedTab.FOR_YOU)
     val selectedFeedTab = _selectedFeedTab.asStateFlow()
@@ -434,9 +447,35 @@ class LykoViewModel(private val repository: LykoRepository = LykoRepository()) :
         showMessage("Report status set to $resolution.")
     }
 
-    fun login(identifier: String, method: String) {
-        repository.login(identifier, method)
-        showMessage("Welcome back to Lyko!")
+    fun authenticate(email: String, password: String, isSignUp: Boolean, username: String) {
+        val cleanEmail = email.trim()
+        if (cleanEmail.isBlank() || password.isBlank()) {
+            showMessage("Please enter your email and password.")
+            return
+        }
+        if (isSignUp && username.isBlank()) {
+            showMessage("Please enter a username.")
+            return
+        }
+        if (isSignUp && password.length < 6) {
+            showMessage("Password must be at least 6 characters.")
+            return
+        }
+        val task = if (isSignUp) repository.register(cleanEmail, password)
+            else repository.login(cleanEmail, password)
+        task.addOnCompleteListener { result ->
+            if (result.isSuccessful) {
+                if (isSignUp) {
+                    val profile = UserProfileChangeRequest.Builder()
+                        .setDisplayName(username.trim()).build()
+                    result.result.user?.updateProfile(profile)
+                }
+                showMessage(if (isSignUp) "Account created successfully!"
+                    else "Welcome back to Lyko!")
+            } else {
+                showMessage(result.exception?.localizedMessage ?: "Authentication failed.")
+            }
+        }
     }
 
     fun logout() {

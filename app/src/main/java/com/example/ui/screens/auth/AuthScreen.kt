@@ -146,8 +146,7 @@ fun AuthScreen(
                 "google" -> {
                     Button(
                         onClick = {
-                            viewModel.showMessage("Signed in with Google Account!")
-                            viewModel.navigateTo(NavigationDestination.FEED)
+                            viewModel.showMessage("Google sign-in is not configured yet.")
                         },
                         modifier = Modifier
                             .fillMaxWidth()
@@ -193,8 +192,7 @@ fun AuthScreen(
 
                     Button(
                         onClick = {
-                            viewModel.showMessage("Verification code sent via SMS!")
-                            viewModel.navigateTo(NavigationDestination.FEED)
+                            viewModel.showMessage("Phone verification is not configured yet.")
                         },
                         modifier = Modifier
                             .fillMaxWidth()
@@ -268,7 +266,7 @@ fun AuthScreen(
 
                     Button(
                         onClick = {
-                            viewModel.navigateTo(NavigationDestination.FEED)
+                            viewModel.authenticate(email, password, isSignUp, username)
                         },
                         modifier = Modifier
                             .fillMaxWidth()

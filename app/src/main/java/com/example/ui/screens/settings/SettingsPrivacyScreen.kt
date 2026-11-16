@@ -206,7 +206,7 @@ fun SettingsPrivacyScreen(
                 ListItem(
                     headlineContent = { Text("Log Out", color = MaterialTheme.colorScheme.error) },
                     leadingContent = { Icon(Icons.Default.Logout, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
-                    modifier = Modifier.clickable { viewModel.showMessage("Logged out") }
+                    modifier = Modifier.clickable { viewModel.logout() }
                 )
             }
         }

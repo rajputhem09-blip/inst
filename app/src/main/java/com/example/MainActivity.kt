@@ -62,7 +62,7 @@ fun LykoMainApp(
     val isLoggedIn by viewModel.isLoggedIn.collectAsState()
 
     // Handle Android system back button
-    BackHandler(enabled = currentScreen != NavigationDestination.FEED) {
+    BackHandler(enabled = currentScreen != NavigationDestination.FEED && currentScreen != NavigationDestination.AUTH) {
         when (currentScreen) {
             NavigationDestination.CHAT_DETAIL -> viewModel.navigateTo(NavigationDestination.MESSAGES)
             NavigationDestination.LIVE_ROOM -> viewModel.navigateTo(NavigationDestination.LIVE_BROWSE)
@@ -129,6 +129,7 @@ fun LykoMainApp(
                 label = "screen_transition"
             ) { destination ->
                 when (destination) {
+                    NavigationDestination.AUTH -> AuthScreen(viewModel = viewModel)
                     NavigationDestination.FEED -> FeedScreen(viewModel = viewModel)
                     NavigationDestination.EXPLORE -> ExploreScreen(viewModel = viewModel)
                     NavigationDestination.CREATE, NavigationDestination.GO_LIVE -> CreateHubScreen(viewModel = viewModel)

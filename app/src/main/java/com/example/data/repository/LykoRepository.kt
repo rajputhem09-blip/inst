@@ -4,6 +4,8 @@ import com.example.data.local.BlockedUserEntity
 import com.example.data.local.LykoDao
 import com.example.data.local.SavedPostEntity
 import com.example.data.model.*
+import com.google.firebase.auth.FirebaseAuth
+
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -11,6 +13,12 @@ import kotlinx.coroutines.flow.update
 import java.util.UUID
 
 class LykoRepository(private val dao: LykoDao? = null) {
+
+    private val firebaseAuth = FirebaseAuth.getInstance()
+    private val authStateListener = FirebaseAuth.AuthStateListener { auth ->
+        _isLoggedIn.value = auth.currentUser != null
+    }
+
 
     // Current logged-in user
     private val _currentUser = MutableStateFlow(
@@ -32,7 +40,7 @@ class LykoRepository(private val dao: LykoDao? = null) {
     )
     val currentUser = _currentUser.asStateFlow()
 
-    private val _isLoggedIn = MutableStateFlow(true)
+    private val _isLoggedIn = MutableStateFlow(firebaseAuth.currentUser != null)
     val isLoggedIn = _isLoggedIn.asStateFlow()
 
     // Users list for discovery & admin
@@ -88,6 +96,7 @@ class LykoRepository(private val dao: LykoDao? = null) {
     val blockedUserIds = _blockedUserIds.asStateFlow()
 
     init {
+        firebaseAuth.addAuthStateListener(authStateListener)
         seedInitialData()
     }
 
@@ -901,11 +910,13 @@ class LykoRepository(private val dao: LykoDao? = null) {
         }
     }
 
-    fun login(emailOrPhone: String, method: String) {
-        _isLoggedIn.value = true
-    }
+    fun register(email: String, password: String) =
+        firebaseAuth.createUserWithEmailAndPassword(email.trim(), password)
+
+    fun login(email: String, password: String) =
+        firebaseAuth.signInWithEmailAndPassword(email.trim(), password)
 
     fun logout() {
-        _isLoggedIn.value = false
+        firebaseAuth.signOut()
     }
 }
