@@ -956,6 +956,9 @@ class LykoRepository(private val dao: LykoDao? = null) {
     fun login(email: String, password: String) =
         firebaseAuth.signInWithEmailAndPassword(email.trim(), password)
 
+    fun sendPasswordResetEmail(email: String) =
+        firebaseAuth.sendPasswordResetEmail(email.trim())
+
     fun logout() {
         firebaseAuth.signOut()
     }

@@ -287,6 +287,18 @@ fun AuthScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            if (!isSignUp) {
+                Text(
+                    text = "Forgot Password?",
+                    color = LykoCyanTertiary,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier
+                        .clickable { viewModel.sendPasswordReset(email) }
+                        .padding(8.dp)
+                )
+            }
+
             Text(
                 text = if (isSignUp) "Already have an account? Log In" else "Don't have an account? Sign Up",
                 color = LykoMagentaSecondary,

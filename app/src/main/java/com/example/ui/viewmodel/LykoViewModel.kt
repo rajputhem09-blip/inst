@@ -486,19 +486,59 @@ class LykoViewModel(private val repository: LykoRepository = LykoRepository()) :
             showMessage("Password must be at least 6 characters.")
             return
         }
+
         val task = if (isSignUp) repository.register(cleanEmail, password)
             else repository.login(cleanEmail, password)
+
         task.addOnCompleteListener { result ->
-            if (result.isSuccessful) {
-                if (isSignUp) {
-                    val profile = UserProfileChangeRequest.Builder()
-                        .setDisplayName(username.trim()).build()
-                    result.result.user?.updateProfile(profile)
-                }
-                showMessage(if (isSignUp) "Account created successfully!"
-                    else "Welcome back to Lyko!")
-            } else {
+            if (!result.isSuccessful) {
                 showMessage(result.exception?.localizedMessage ?: "Authentication failed.")
+                return@addOnCompleteListener
+            }
+
+            if (isSignUp) {
+                val user = result.result.user
+                if (user == null) {
+                    showMessage("Account created, but user profile could not be loaded.")
+                    return@addOnCompleteListener
+                }
+
+                val profile = UserProfileChangeRequest.Builder()
+                    .setDisplayName(username.trim())
+                    .build()
+
+                user.updateProfile(profile).addOnCompleteListener profileUpdate@{ profileResult ->
+                    if (!profileResult.isSuccessful) {
+                        showMessage("Account created, but profile update failed.")
+                        return@profileUpdate
+                    }
+
+                    user.sendEmailVerification().addOnCompleteListener { emailResult ->
+                        if (emailResult.isSuccessful) {
+                            showMessage("Account created. Please check your email to verify it.")
+                        } else {
+                            showMessage("Account created, but verification email could not be sent.")
+                        }
+                    }
+                }
+            } else {
+                showMessage("Welcome back to Lyko!")
+            }
+        }
+    }
+
+    fun sendPasswordReset(email: String) {
+        val cleanEmail = email.trim()
+        if (cleanEmail.isBlank()) {
+            showMessage("Enter your email address first.")
+            return
+        }
+
+        repository.sendPasswordResetEmail(cleanEmail).addOnCompleteListener { result ->
+            if (result.isSuccessful) {
+                showMessage("Password reset link sent. Check your email.")
+            } else {
+                showMessage(result.exception?.localizedMessage ?: "Could not send reset email.")
             }
         }
     }
