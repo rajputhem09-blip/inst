@@ -25,6 +25,9 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.data.model.PostType
@@ -304,8 +307,17 @@ fun ProfileScreen(
     // Edit Profile Modal
     if (showEditProfileDialog) {
         var editName by remember { mutableStateOf(currentUser.displayName) }
+        var editUsername by remember { mutableStateOf(currentUser.username) }
         var editBio by remember { mutableStateOf(currentUser.bio) }
         var editWebsite by remember { mutableStateOf(currentUser.website) }
+
+        val sevenDaysMillis = 7L * 24 * 60 * 60 * 1000
+        val usernameLocked = currentUser.lastUsernameChangeAt > 0L &&
+            System.currentTimeMillis() - currentUser.lastUsernameChangeAt < sevenDaysMillis
+        val usernameAvailableDate = currentUser.lastUsernameChangeAt + sevenDaysMillis
+        val dateFormatter = remember {
+            SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
+        }
 
         AlertDialog(
             onDismissRequest = { showEditProfileDialog = false },
@@ -327,6 +339,20 @@ fun ProfileScreen(
                     )
 
                     OutlinedTextField(
+                        value = editUsername,
+                        onValueChange = { editUsername = it.removePrefix("@").lowercase() },
+                        label = { Text("Username (@)") },
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !usernameLocked,
+                        supportingText = {
+                            Text(
+                                if (usernameLocked)
+                                    "Username can change again on ${dateFormatter.format(Date(usernameAvailableDate))}"
+                                else "3-20 characters: letters, numbers or underscore. Changes allowed once every 7 days."
+                            )
+                        }
+                    )
+                    OutlinedTextField(
                         value = editBio,
                         onValueChange = { editBio = it },
                         label = { Text("Bio") },
@@ -345,13 +371,14 @@ fun ProfileScreen(
             confirmButton = {
                 Button(
                     onClick = {
-                        viewModel.updateProfile(
+                        val saved = viewModel.updateProfile(
                             displayName = editName,
                             bio = editBio,
                             website = editWebsite,
-                            avatarUrl = currentUser.avatarUrl
+                            avatarUrl = currentUser.avatarUrl,
+                            username = editUsername
                         )
-                        showEditProfileDialog = false
+                        if (saved) showEditProfileDialog = false
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = LykoVioletPrimary)
                 ) {

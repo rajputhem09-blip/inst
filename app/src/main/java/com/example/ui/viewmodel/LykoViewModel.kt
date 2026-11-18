@@ -417,9 +417,34 @@ class LykoViewModel(private val repository: LykoRepository = LykoRepository()) :
         // Mark read
     }
 
-    fun updateProfile(displayName: String, bio: String, website: String, avatarUrl: String = "", bannerUrl: String = "") {
-        repository.updateProfile(displayName, bio, website, avatarUrl, bannerUrl)
+    fun updateProfile(
+        displayName: String,
+        bio: String,
+        website: String,
+        avatarUrl: String = "",
+        bannerUrl: String = "",
+        username: String = currentUser.value.username
+    ): Boolean {
+        val oldUsername = currentUser.value.username
+        val success = repository.updateProfile(
+            displayName, bio, website, avatarUrl, bannerUrl, username
+        )
+
+        if (!success) {
+            showMessage("Username must be 3-20 characters (letters, numbers, _) and can change only once every 7 days.")
+            return false
+        }
+
+        if (username.trim().removePrefix("@").lowercase() != oldUsername) {
+            val profile = UserProfileChangeRequest.Builder()
+                .setDisplayName(username.trim().removePrefix("@").lowercase())
+                .build()
+            com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
+                ?.updateProfile(profile)
+        }
+
         showMessage("Profile updated successfully!")
+        return true
     }
 
     fun createPost(

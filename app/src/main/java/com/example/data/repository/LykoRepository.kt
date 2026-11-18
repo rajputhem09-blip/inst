@@ -5,6 +5,7 @@ import com.example.data.local.LykoDao
 import com.example.data.local.SavedPostEntity
 import com.example.data.model.*
 import com.google.firebase.auth.FirebaseAuth
+import android.content.Context
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,6 +16,9 @@ import java.util.UUID
 class LykoRepository(private val dao: LykoDao? = null) {
 
     private val firebaseAuth = FirebaseAuth.getInstance()
+    private val usernamePrefs = firebaseAuth.app.applicationContext
+        .getSharedPreferences("lyko_username_policy", Context.MODE_PRIVATE)
+
     private val authStateListener = FirebaseAuth.AuthStateListener { auth ->
         _isLoggedIn.value = auth.currentUser != null
     }
@@ -24,12 +28,13 @@ class LykoRepository(private val dao: LykoDao? = null) {
     private val _currentUser = MutableStateFlow(
         User(
             id = "user_me",
-            username = "alex_vortex",
+            username = usernamePrefs.getString("username_user_me", "alex_vortex") ?: "alex_vortex",
             displayName = "Alex Vance",
             avatarUrl = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80",
             bannerUrl = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1000&auto=format&fit=crop&q=80",
             bio = "Digital artist & sound designer ⚡ Building visual worlds on Lyko 🌌 #FutureAesthetics",
             website = "https://lyko.social/@alex",
+            lastUsernameChangeAt = usernamePrefs.getLong("last_change_user_me", 0L),
             verification = VerificationStatus.VERIFIED_CREATOR,
             role = UserRole.ADMIN,
             followersCount = 14200,
@@ -837,9 +842,43 @@ class LykoRepository(private val dao: LykoDao? = null) {
         return stream
     }
 
-    fun updateProfile(displayName: String, bio: String, website: String, avatarUrl: String, bannerUrl: String) {
+    fun updateProfile(
+        displayName: String,
+        bio: String,
+        website: String,
+        avatarUrl: String,
+        bannerUrl: String,
+        username: String = _currentUser.value.username
+    ): Boolean {
+        val current = _currentUser.value
+        val normalizedUsername = username.trim().removePrefix("@").lowercase()
+
+        if (!normalizedUsername.matches(Regex("^[a-z0-9_]{3,20}$"))) {
+            return false
+        }
+
+        val usernameChanged = normalizedUsername != current.username
+        val now = System.currentTimeMillis()
+
+        if (usernameChanged) {
+            val key = "last_change_${current.id}"
+            val lastChange = usernamePrefs.getLong(key, current.lastUsernameChangeAt)
+            val sevenDays = 7L * 24 * 60 * 60 * 1000
+
+            if (lastChange > 0L && now - lastChange < sevenDays) {
+                return false
+            }
+
+            usernamePrefs.edit()
+                .putString("username_user_me", normalizedUsername)
+                .putLong(key, now)
+                .apply()
+        }
+
         _currentUser.update {
             it.copy(
+                username = normalizedUsername,
+                lastUsernameChangeAt = if (usernameChanged) now else it.lastUsernameChangeAt,
                 displayName = displayName,
                 bio = bio,
                 website = website,
@@ -847,6 +886,7 @@ class LykoRepository(private val dao: LykoDao? = null) {
                 bannerUrl = bannerUrl.ifBlank { it.bannerUrl }
             )
         }
+        return true
     }
 
     // Admin & Moderation methods

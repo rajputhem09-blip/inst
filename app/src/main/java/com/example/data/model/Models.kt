@@ -65,6 +65,7 @@ data class User(
     val bannerUrl: String = "",
     val bio: String = "",
     val website: String = "",
+    val lastUsernameChangeAt: Long = 0L,
     val verification: VerificationStatus = VerificationStatus.NONE,
     val role: UserRole = UserRole.USER,
     val followersCount: Int = 0,
